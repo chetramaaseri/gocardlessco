@@ -1,0 +1,10 @@
+BASE_URI=http://localhost:4001/
+ADMIN_ROUTE=/admin
+
+# Database Settings
+DB_DRIVER=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=pero
+DB_USERNAME=root
+DB_PASSWORD=root

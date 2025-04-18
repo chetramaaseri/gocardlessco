@@ -1,0 +1,12 @@
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Exclude existing files and directories (except /admin)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Redirect all requests to index.php (except /assets)
+    RewriteCond %{REQUEST_URI} !^/(assets) [NC]
+    RewriteRule ^(.*)$ index.php [L,QSA]
+</IfModule>
