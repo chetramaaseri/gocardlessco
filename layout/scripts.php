@@ -1,0 +1,13 @@
+<script src="<?=BASE_URI?>assets/js/jquery.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/popper.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/bootstrap.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/bootstrap-dropdown-ml-hack.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/swiper-bundle.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/parallaxie.js"></script>
+<script src="<?=BASE_URI?>assets/js/parallax-scroll.js"></script>
+<script src="<?=BASE_URI?>assets/js/wow.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/magnific-popup.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/appear.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/odometer.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/ticker.min.js"></script>
+<script src="<?=BASE_URI?>assets/js/main.js"></script>
