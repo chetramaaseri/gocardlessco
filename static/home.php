@@ -767,6 +767,7 @@
                 </div>
             </section>
         </main>
+        <?php require_once 'layout/chatbox.php'; ?>
         <?php require_once 'layout/footer.php'; ?>
     </div>
     <?php require_once 'layout/scripts.php'; ?>
