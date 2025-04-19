@@ -297,21 +297,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- <div class="col-lg-4">
-                  <div class="features_block bg-secondary">
-                    <div class="features_icon">
-                      <img src="<?=BASE_URL?>assets/images/icons/icon_chart_bar.svg" alt="Icon Chart Bar">
-                    </div>
-                    <div class="features_content">
-                      <h3 class="features_title">
-                      Forget expensive fees
-                      </h3>
-                      <p class="mb-0">
-                      GoCardless collects direct bank payments. Meaning no card fees. And with all that wasted admin time cut away, the savings really stack up.
-                    </p>
-                    </div>
-                  </div>
-                </div> -->
                         </div>
                     </div>
                 </div>
