@@ -1,0 +1,14 @@
+{
+    "name": "cheeku/www",
+    "authors": [
+        {
+            "name": "chetramaaseri",
+            "email": "developer.chetramaaseri@gmail.com"
+        }
+    ],
+    "require": {
+        "illuminate/database": "^12.2",
+        "google/apiclient": "^2.18",
+        "vlucas/phpdotenv": "^5.6"
+    }
+}
