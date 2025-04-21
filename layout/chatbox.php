@@ -36,65 +36,11 @@ if(!empty($_SESSION['query_Id'])){
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const chatWidget = document.querySelector('.fb-chat-widget');
         const chatHeader = document.querySelector('.fb-chat-header');
         const chatBody = document.querySelector('.fb-chat-body');
-        const minimizeBtn = document.querySelector('.minimize-btn');
-        const sendBtn = document.querySelector('.send-btn');
-        const messageInput = document.querySelector('.message-input');
-        const messagesContainer = document.querySelector('.fb-messages');
         chatHeader.addEventListener('click', function(e) {
             chatBody.classList.toggle('collapsed');
         });
-        // Send message
-        function sendMessage() {
-            const messageText = messageInput.value.trim();
-            if (messageText) {
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('fb-message', 'sent');
-                messageElement.textContent = messageText;
-                messagesContainer.appendChild(messageElement);
-                messageInput.value = '';
-                
-                // Scroll to bottom
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
-                // Simulate reply after 1-2 seconds
-                setTimeout(() => {
-                    // Show typing indicator
-                    const typingIndicator = document.querySelector('.fb-typing');
-                    typingIndicator.style.display = 'flex';
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    
-                    // After 1-3 seconds, send reply
-                    setTimeout(() => {
-                        typingIndicator.style.display = 'none';
-                        const replies = [
-                            "I see. What else would you like to know?",
-                            "Thanks for your message!",
-                            "Let me check that for you...",
-                            "That's a great question!",
-                            "I'll need to look that up for you."
-                        ];
-                        const randomReply = replies[Math.floor(Math.random() * replies.length)];
-                        
-                        const replyElement = document.createElement('div');
-                        replyElement.classList.add('fb-message', 'received');
-                        replyElement.textContent = randomReply;
-                        messagesContainer.appendChild(replyElement);
-                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                    }, 1000 + Math.random() * 2000);
-                }, 500 + Math.random() * 1500);
-            }
-        }
-        
-        // sendBtn.addEventListener('click', sendMessage);
-        
-        // messageInput.addEventListener('keypress', function(e) {
-        //     if (e.key === 'Enter') {
-        //         sendMessage();
-        //     }
-        // });
     });
 </script>
 <script type="text/babel">
@@ -106,7 +52,7 @@ if(!empty($_SESSION['query_Id'])){
         const [isLoginFormVisible,setLoginFormVisible] = React.useState(false);
         const [typedMessage,setTypedMessage] = React.useState('');
         const [agent,setAgent] = React.useState(<?=json_encode($executiveAssigned)?>);
-        const [isAgentAvailable, setAgentAvailable] = React.useState(<?=!empty($executiveAssigned) ? true : false?>);
+        const [isAgentAvailable, setAgentAvailable] = React.useState(false);
         const [isAgentTyping,setAgentTyping] = React.useState(false);
         const [waitingQueue,setWaitingQueue] = React.useState(0);
         const [user,setUser] = React.useState({
@@ -117,8 +63,8 @@ if(!empty($_SESSION['query_Id'])){
         });
 
         const [messages, setMessages] = React.useState([
-            { text: `Hello${isLoggedIn ? ' '+user.name:''}!`, sender: 'bot' },
-            { text: 'Welcome to GoCardlessCo', sender: 'bot' },
+            { text: `Hello${isLoggedIn ? ' '+user.name:''}!`, sender: 'agent' },
+            { text: 'Welcome to GoCardlessCo', sender: 'agent' },
         ]);
 
         function formatTime(dateString) {
@@ -164,6 +110,7 @@ if(!empty($_SESSION['query_Id'])){
             console.log("executiveAssigned",executiveAssigned);
             if(executiveAssigned && executiveAssigned.user_id && executiveAssigned.query_id){
                 console.log("assigned ",executiveAssigned);
+                setAgentAvailable(true);
                 setAgent(executiveAssigned);
                 const formData = new FormData();
                 formData.append('executive_id', executiveAssigned.user_id);
@@ -187,16 +134,20 @@ if(!empty($_SESSION['query_Id'])){
             setAgentAvailable(false);
         };
         const handleWaitingQueue = async (data) => {
-            
             console.log("wait in qyeryw", data);
             if(data){
                 setWaitingQueue(data.waitingUsers);
-                setMessages(messages => [...messages, { text: 'Kindly Wait For a While Our Executives are Busy.', sender: 'bot' }]);
+                setAgentAvailable(false);
+                setMessages(messages => [...messages, { text: 'Kindly Wait For a While Our Executives are Busy.', sender: 'agent' }]);
             }
         };
         const handleAgentMessage = async (data) => {
             console.log("agent message", data);
             setMessages(messages => [...messages, { text: data.text, sender: 'agent' }]);
+        };
+        const handleChatHistory = async (chatHistory) => {
+            console.log("chat history", chatHistory);
+            setMessages(messages => [ ...messages, ...chatHistory]);
         };
         const handleAgentTyping = async (data) => {
             console.log("exe typing", data);
@@ -220,11 +171,13 @@ if(!empty($_SESSION['query_Id'])){
             window.socket.on('executive_not_available', handleExecutiveNotAvailable);
             window.socket.on('waiting_queue', handleWaitingQueue);
             window.socket.on('executiveMessage', handleAgentMessage);
+            window.socket.on('chatHistory', handleChatHistory);
             return () => {
                 window.socket.off('executive_assigned', handleExecutiveAssigned);
                 window.socket.off('executive_not_available', handleExecutiveNotAvailable);
                 window.socket.off('waiting_queue', handleWaitingQueue);
                 window.socket.off('executiveMessage', handleAgentMessage);
+                window.socket.off('chatHistory', handleChatHistory);
             };
         }, []);
 
@@ -237,7 +190,7 @@ if(!empty($_SESSION['query_Id'])){
         const askForUserDetails = async () => {
             setAgentTyping(true);
             await new Promise(resolve => setTimeout(resolve, 500));
-            setMessages(messages => [...messages, { text: 'Please provide your name, mobile number and email address.', sender: 'bot' }]);
+            setMessages(messages => [...messages, { text: 'Please provide your name, mobile number and email address.', sender: 'agent' }]);
             await new Promise(resolve => setTimeout(resolve, 500));
             setLoginFormVisible(true);
             setAgentTyping(false);
@@ -264,7 +217,7 @@ if(!empty($_SESSION['query_Id'])){
                 console.error('Login form submission error:', error);
             }
             await new Promise(resolve => setTimeout(resolve, 500));
-            setMessages(messages => [...messages, { text: `Thank you ${user.name}. How can I assist you today?`, sender: 'bot' }]);
+            setMessages(messages => [...messages, { text: `Thank you ${user.name}. How can I assist you today?`, sender: 'agent' }]);
             setLoginFormVisible(false);
             setAgentTyping(false);
         }
@@ -279,13 +232,13 @@ if(!empty($_SESSION['query_Id'])){
             }else if(!isAgentAvailable){
                 setAgentTyping(true);
                 await new Promise(resolve => setTimeout(resolve, 500));
-                setMessages(messages => [...messages, { text: 'No agent available right now.', sender: 'bot' }]);
+                setMessages(messages => [...messages, { text: 'No agent available right now.', sender: 'agent' }]);
                 await new Promise(resolve => setTimeout(resolve, 500));
-                setMessages(messages => [...messages, { text: 'we will get back to you.', sender: 'bot' }]);
+                setMessages(messages => [...messages, { text: 'we will get back to you.', sender: 'agent' }]);
                 setAgentTyping(false);
             }else{
                 const now = new Date();
-                window.socket.emit('userMessage', { text: typedMessage.trim(), query_id: user.query_id, executive_id: agent.user_id, time: now.toISOString()});
+                window.socket.emit('userMessage', { sender: 'user', text: typedMessage.trim(), query_id: user.query_id, executive_id: agent.user_id, time: now.toISOString()});
             }
             setTypedMessage('');
         };
@@ -298,10 +251,10 @@ if(!empty($_SESSION['query_Id'])){
                     </div>
                     {
                         messages.map((text,index)=>{
-                            if(text.sender == 'self'){
-                                return <div className="fb-message sent">{text.text}</div>
-                            }else{
+                            if(text.sender == 'agent'){
                                 return <div className="fb-message received">{text.text}</div>
+                            }else{
+                                return <div className="fb-message sent">{text.text}</div>
                             }
                         })
                     }

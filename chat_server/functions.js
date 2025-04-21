@@ -1,6 +1,9 @@
 export function assignQueryToExecutive(executivesMap, query) {
     const sortedExecutives = Array.from(executivesMap.entries()).sort(([, a], [, b]) => Number(a.preference) - Number(b.preference));
     for (const [key, exec] of sortedExecutives) {
+        if (exec.assignedQueries.some(existingQuery => existingQuery.queryId === query.queryId)) {
+            return exec;
+        }
         if (exec.totalAssigned < exec.capacity) {
             exec.assignedQueries.push(query);
             exec.totalAssigned += 1;
