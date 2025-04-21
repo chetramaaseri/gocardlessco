@@ -6,9 +6,9 @@ error_reporting(E_ALL);
 session_save_path('../sessions');
 
 // Autoloading & Env Setup
-require_once '../vendor/autoload.php';
-require_once '../pero/functions/PeroAutoload.php';
-require_once '../pero/functions/PeroHelpers.php';
+require_once './vendor/autoload.php';
+require_once './pero/functions/PeroAutoload.php';
+require_once './pero/functions/PeroHelpers.php';
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 
