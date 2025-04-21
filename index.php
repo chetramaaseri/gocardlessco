@@ -44,8 +44,8 @@ define('BASE_URI', $_ENV['BASE_URI'] ?? ((isset($_SERVER['HTTPS']) ? 'https' : '
 define('BASE_URL', rtrim(BASE_URI, '/') . '/');
 define('ADMIN_ROUTE', $_ENV['ADMIN_ROUTE'] ?? '/admin');
 define('ADMIN_URL', rtrim(BASE_URI, '/') . ADMIN_ROUTE . '/');
-define('ADMIN_FILES', '../pero/');
-define('ADMIN_ASSET', 'https://perosite.com/panel/');
+define('ADMIN_FILES', './pero/');
+define('ADMIN_ASSET', rtrim(BASE_URI, '/') . '/pero/');
 
 // URI Routing
 $requestUri = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
@@ -58,19 +58,15 @@ $requestUri = $requestUri ?: '/';
 
 // Static Routes Map
 $staticRoutes = [
-    ADMIN_ROUTE => ADMIN_FILES . 'blogs/posts.php',
+    ADMIN_ROUTE => ADMIN_FILES . 'chats/queries.php',
     ADMIN_ROUTE . '/auth' => ADMIN_FILES . 'auth/login.php',
     ADMIN_ROUTE . '/auth/login' => ADMIN_FILES . 'auth/login.php',
     ADMIN_ROUTE . '/auth/google-auth' => ADMIN_FILES . 'auth/google.php',
+    ADMIN_ROUTE . '/users' => ADMIN_FILES . 'users/users.php',
+    ADMIN_ROUTE . '/chats/queries' => ADMIN_FILES . 'chats/queries.php',
     ADMIN_ROUTE . '/auth/logout' => ADMIN_FILES . 'auth/logout.php',
-    ADMIN_ROUTE . '/dashboard' => ADMIN_FILES . 'blogs/posts.php',
-    ADMIN_ROUTE . '/chats/livechat' => ADMIN_FILES . 'chats/livechat.php',
+    ADMIN_ROUTE . '/dashboard' => ADMIN_FILES . 'chats/queries.php',
     ADMIN_ROUTE . '/chats/chatwindow' => ADMIN_FILES . 'chats/chatwindow.php',
-    ADMIN_ROUTE . '/gallery' => ADMIN_FILES . 'blogs/gallery.php',
-    ADMIN_ROUTE . '/routes' => ADMIN_FILES . 'blogs/routes.php',
-    ADMIN_ROUTE . '/sitemap' => ADMIN_FILES . 'blogs/sitemap.php',
-    ADMIN_ROUTE . '/quote-requests' => ADMIN_FILES . 'enquiry/quote.php',
-    ADMIN_ROUTE . '/contact-requests' => ADMIN_FILES . 'enquiry/contact.php',
 ];
 
 // Static Route Handling
