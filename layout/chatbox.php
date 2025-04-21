@@ -5,7 +5,7 @@ if(!empty($_SESSION['query_Id'])){
     $executiveAssigned = (array) $db->table('queries')
     ->leftJoin('users', 'users.user_id', '=', 'queries.executive_id')
     ->where('queries.query_id', $_SESSION['query_Id'])
-    ->select('users.*', 'queries.query_id')
+    ->select('users.*', 'queries.query_id', 'queries.status')
     ->first();
 
     $loggedInUser = [
@@ -17,6 +17,13 @@ if(!empty($_SESSION['query_Id'])){
         'created_at' => date('Y-m-d H:i:s'),
         'updated_at' => date('Y-m-d H:i:s'),
     ];
+
+    if($executiveAssigned['status'] == 'closed'){
+        unset($_SESSION['query_Id']);
+        unset($_SESSION['name']);
+        unset($_SESSION['email']);
+        unset($_SESSION['mobile']);
+    }
 }
 
 ?>
@@ -53,6 +60,7 @@ if(!empty($_SESSION['query_Id'])){
         const [typedMessage,setTypedMessage] = React.useState('');
         const [agent,setAgent] = React.useState(<?=json_encode($executiveAssigned)?>);
         const [isAgentAvailable, setAgentAvailable] = React.useState(false);
+        const [isChatOpen, setChatOpen] = React.useState(true);
         const [isAgentTyping,setAgentTyping] = React.useState(false);
         const [waitingQueue,setWaitingQueue] = React.useState(0);
         const [user,setUser] = React.useState({
@@ -152,6 +160,10 @@ if(!empty($_SESSION['query_Id'])){
         const handleAgentTyping = async (data) => {
             console.log("exe typing", data);
         }
+        const handleChatClose = (data) => {
+            setChatOpen(false);
+            console.log("chat Close", data);
+        }
         React.useEffect(() => {
             window.socket = io(`<?=$_ENV['CHAT_SERVER_URL']?>`);
             window.socket.on("connect", () => {
@@ -172,12 +184,13 @@ if(!empty($_SESSION['query_Id'])){
             window.socket.on('waiting_queue', handleWaitingQueue);
             window.socket.on('executiveMessage', handleAgentMessage);
             window.socket.on('chatHistory', handleChatHistory);
+            window.socket.on('closeChat', handleChatClose);
             return () => {
                 window.socket.off('executive_assigned', handleExecutiveAssigned);
                 window.socket.off('executive_not_available', handleExecutiveNotAvailable);
                 window.socket.off('waiting_queue', handleWaitingQueue);
                 window.socket.off('executiveMessage', handleAgentMessage);
-                window.socket.off('chatHistory', handleChatHistory);
+                window.socket.off('closeChat', handleChatClose);
             };
         }, []);
 
@@ -343,14 +356,31 @@ if(!empty($_SESSION['query_Id'])){
                         : <div className="no-queue"></div>
                     }
                     {
+                        !isChatOpen && 
+                            <div className="fb-waiting-queue">
+                                <div className="queue-header">
+                                    <i className="fas fa-users me-2"></i>Chat Closed
+                                </div>
+                                
+                                <div className="queue-info-container">
+                                    <div className="queue-text-container">
+                                        <div className="queue-position-text text-center">Thankyou For Contacting Us</div>
+                                    </div>
+                                </div>
+                            </div>
+                    }
+                    {
                         isAgentTyping && <div className="fb-typing"><div className="dot"></div><div className="dot"></div><div className="dot"></div></div>
                     }
                     <div ref={messagesEndRef} />
                 </div>
-                <div className="fb-chat-input">
-                    <input autofocus="true" onChange={(e)=>setTypedMessage(e.target.value)} onKeyDown={(e) => {if (e.key === 'Enter') {sendMessage()}}} value={typedMessage} type="text" placeholder="Type a message..." className="message-input"/>
-                    <button onClick={sendMessage} className="send-btn"><i className="fas fa-paper-plane"></i></button>
-                </div>
+                {
+                    isChatOpen && !waitingQueue && 
+                        <div className="fb-chat-input">
+                            <input autofocus="true" onChange={(e)=>setTypedMessage(e.target.value)} onKeyDown={(e) => {if (e.key === 'Enter') {sendMessage()}}} value={typedMessage} type="text" placeholder="Type a message..." className="message-input"/>
+                            <button onClick={sendMessage} className="send-btn"><i className="fas fa-paper-plane"></i></button>
+                        </div>
+                }
             </React.Fragment>
         )
     }

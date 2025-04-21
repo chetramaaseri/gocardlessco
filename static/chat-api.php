@@ -43,4 +43,37 @@ if(isset($_GET['action']) && $_GET['action'] == 'saveMessage'){
     ]);
     exit;
 }
+if(isset($_GET['action']) && $_GET['action'] == 'closeChat'){
+    $db->table('queries')->where('query_id', $_POST['query_id'])->update(['status' => 'closed']);
+    function splitAndInsertChats($db, $query_id, $chatArray, &$partCounter) {
+        $json = json_encode($chatArray);
+        if (strlen($json) <= 64000) {
+            $db->table('chat_history')->insert([
+                'query_id' => $query_id,
+                'chats' => $json,
+                'part' => $partCounter++
+            ]);
+        } else {
+            $mid = floor(count($chatArray) / 2);
+            $firstHalf = array_slice($chatArray, 0, $mid);
+            $secondHalf = array_slice($chatArray, $mid);
+            splitAndInsertChats($db, $query_id, $firstHalf, $partCounter);
+            splitAndInsertChats($db, $query_id, $secondHalf, $partCounter);
+        }
+    }
+    $maxLength = 64000;
+    $query_id = $_POST['query_id'];
+    $chatArray = json_decode($_POST['chats'], true);
+    if (is_array($chatArray)) {
+        $partCounter = 1;
+        splitAndInsertChats($db, $query_id, $chatArray, $partCounter);
+    }
+    header('Content-Type: application/json');
+    echo json_encode([
+        "status" => 200,
+        "query_id" => $_POST['query_id'],
+        "message" => "Query Closed successfully"
+    ]);
+    exit;
+}
 ?>

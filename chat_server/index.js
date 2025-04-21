@@ -95,7 +95,7 @@ io.on('connection', (socket) => {
         if(chats){
             socket.emit('chatHistory', chats);
         }
-        if(data.executive_id){
+        if(data.executive_id != 0){
             const executiveAssigned = activeExecutives.get(data.executive_id.toString());
             console.log("old ex assigned", executiveAssigned);
             console.log("all exe", activeExecutives);
@@ -152,8 +152,7 @@ io.on('connection', (socket) => {
         });
         const chatHistory = await getMultipleQueryData(data.assignedQueries);
         socket.emit('chatHistory', chatHistory);
-        console.log(`Executive registered: ${socket.id}`);
-        // console.log(`Active Executives`, activeExecutives);
+        console.log(`Executive registered: ${socket.id}`, data);
     })
 
     socket.on('executiveMessage', async (data) => {
@@ -163,8 +162,6 @@ io.on('connection', (socket) => {
             await storeChat(data.query_id, data);
             io.to(assignedUser.socketId).emit('executiveMessage', data);
         }
-
-        // io.emit('broadcast', { sender: socket.id, message: data });
     });
 
     socket.on('userMessage', async (data) => {
@@ -174,6 +171,14 @@ io.on('connection', (socket) => {
         await storeChat(data.query_id, data);
         io.to(executiveAssigned.socketId).emit('userMessage', data);
         // io.emit('broadcast', { sender: socket.id, message: data });
+    });
+
+    socket.on('closeChat', async (data) => {
+        console.log(`Chat Close ${socket.id}:`, data);
+        const assignedUser = activeUsers.get(data.query_id);
+        if(assignedUser){
+            io.to(assignedUser.socketId).emit('closeChat', data);
+        }
     });
 
     socket.on('disconnect', async () => {
