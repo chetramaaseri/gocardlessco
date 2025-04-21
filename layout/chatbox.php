@@ -164,6 +164,20 @@ if(!empty($_SESSION['query_Id'])){
             setChatOpen(false);
             console.log("chat Close", data);
         }
+        const handleRetryRegister = (data) => {
+            if (loggedInUser && Object.keys(loggedInUser).length > 0) {
+                console.log("retry login user and register", loggedInUser);
+                window.socket.emit('user_registered', loggedInUser);
+            }
+        }
+        const handleWaitingQueueUpdate = (data) => {
+            console.log("wait in qyeryw", data);
+            if(data){
+                const index = data.indexOf(user.query_id);
+                setWaitingQueue(index ? index : sizeof(data));
+                setAgentAvailable(false);
+            }
+        }
         React.useEffect(() => {
             window.socket = io(`<?=$_ENV['CHAT_SERVER_URL']?>`);
             window.socket.on("connect", () => {
@@ -182,15 +196,19 @@ if(!empty($_SESSION['query_Id'])){
             window.socket.on('executive_assigned', handleExecutiveAssigned);
             window.socket.on('executive_not_available', handleExecutiveNotAvailable);
             window.socket.on('waiting_queue', handleWaitingQueue);
+            window.socket.on('waiting_queue_update', handleWaitingQueueUpdate);
             window.socket.on('executiveMessage', handleAgentMessage);
             window.socket.on('chatHistory', handleChatHistory);
             window.socket.on('closeChat', handleChatClose);
+            window.socket.on('retryRegister', handleRetryRegister);
             return () => {
                 window.socket.off('executive_assigned', handleExecutiveAssigned);
                 window.socket.off('executive_not_available', handleExecutiveNotAvailable);
                 window.socket.off('waiting_queue', handleWaitingQueue);
+                window.socket.off('waiting_queue_update', handleWaitingQueueUpdate);
                 window.socket.off('executiveMessage', handleAgentMessage);
                 window.socket.off('closeChat', handleChatClose);
+                window.socket.off('retryRegister', handleRetryRegister);
             };
         }, []);
 

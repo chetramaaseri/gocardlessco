@@ -90,6 +90,10 @@ io.on('connection', (socket) => {
 
     socket.on('user_registered', async (data) => {
         console.log('user Register',data);
+        activeUsers.set(data.query_id, {
+            ...data,
+            socketId: socket.id,
+        });
         // console.log("data log type, " ,typeof data);
         const chats = await getChats(data.query_id);
         if(chats){
@@ -133,7 +137,6 @@ io.on('connection', (socket) => {
             });
             if(executiveAssigned) {
                 // console.log("exe assign data", {query_id: data.query_id, ...executiveAssigned});
-                
                 socket.emit('executive_assigned', {query_id: data.query_id, ...executiveAssigned});
                 socket.to(executiveAssigned.socketId).emit('new_query', data);
             }else{
@@ -179,6 +182,25 @@ io.on('connection', (socket) => {
         if(assignedUser){
             io.to(assignedUser.socketId).emit('closeChat', data);
         }
+        const sortedExecutives = Array.from(activeExecutives.entries()).sort(([, a], [, b]) => Number(a.preference) - Number(b.preference));
+        for (const [key, exec] of sortedExecutives) {
+            if (exec.assignedQueries.some(existingQuery => existingQuery.queryId === data.queryId)) {
+                executiveAssigned = exec;
+                exec.totalAssigned -= 1;
+                const index = exec.assignedQueries.findIndex(q => q.queryId === data.queryId);
+                if (index !== -1) {
+                    exec.assignedQueries.splice(index, 1);
+                }
+                activeExecutives.set(key, exec);
+            }
+        }
+        activeUsers.delete(data.query_id);
+        const hitQueryId = waitingUsers.values().next().value;
+        const findUser = activeUsers.get(data.hitQueryId);
+        if(findUser){
+            io.to(findUser.socketId).emit('retryRegister', data);
+        }
+        io.emit('waiting_queue_update', { waitingUsers });
     });
 
     socket.on('disconnect', async () => {
@@ -206,7 +228,7 @@ io.on('connection', (socket) => {
         }
         // console.log("on disconnect active execuives",activeExecutives);
         // console.log("on disconnect active users",activeUsers);
-        
+        io.emit('waiting_queue_update', { waitingUsers });
         activeConnections.delete(socket.id);
         // console.log(`Remaining connections: ${activeConnections.size}`);
     });
