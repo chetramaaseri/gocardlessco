@@ -31,4 +31,16 @@ if(isset($_GET['action']) && $_GET['action'] == 'executiveAssigned'){
     ]);
     exit;
 }
+
+if(isset($_GET['action']) && $_GET['action'] == 'saveMessage'){
+    $db->table('queries')->where('query_id', $_POST['query_id'])->update(['message' => $_POST['message']]);
+    header('Content-Type: application/json');
+    echo json_encode([
+        "status" => 200,
+        "message" => $_POST['message'],
+        "query_id" => $_POST['query_id'],
+        "message" => "Message Saved successfully"
+    ]);
+    exit;
+}
 ?>

@@ -43,26 +43,27 @@ io.on('connection', (socket) => {
     activeConnections.set(socket.id, socket);
 
     socket.on('user_registered', (data) => {
-        console.log('user Register',data);
+        // console.log('user Register',data);
+        // console.log("data log type, " ,typeof data);
+        
         if(activeExecutives.size > 0){
             const executiveAssigned = assignQueryToExecutive(activeExecutives, data.query_id);
-            console.log("assigned Ex", executiveAssigned);
+            // console.log("assigned Ex", executiveAssigned);
             activeUsers.set(data.query_id, {
                 ...data,
                 socketId: socket.id,
                 executive_id: executiveAssigned?.user_id || null,
             });
             if(executiveAssigned) {
+                // console.log("exe assign data", {query_id: data.query_id, ...executiveAssigned});
+                
+                socket.emit('executive_assigned', {query_id: data.query_id, ...executiveAssigned});
                 socket.to(executiveAssigned.socketId).emit('new_query', data);
-                socket.emit('executive_assigned', {...executiveAssigned,query_id: data.query_id});
             }else{
                 waitingUsers.add(data.query_id);
-                console.log("waity is queuw", waitingUsers);
                 socket.emit('waiting_queue', {query_id: data.query_id, waitingUsers: waitingUsers.size});
             }
         }else{
-            console.log("Evt executive_not_available");
-            
             socket.emit('executive_not_available', {query_id: data.query_id});
         }
     });
@@ -73,16 +74,45 @@ io.on('connection', (socket) => {
             socketId: socket.id,
         });
         console.log(`Executive registered: ${socket.id}`);
-        console.log(`Active Executives`, activeExecutives);
+        // console.log(`Active Executives`, activeExecutives);
     })
 
-    socket.on('message', (data) => {
+    socket.on('executiveMessage', (data) => {
         console.log(`Message from ${socket.id}:`, data);
-        io.emit('broadcast', { sender: socket.id, message: data });
+        const assignedUser = activeUsers.get(data.query_id);
+        console.log(assignedUser);
+        io.to(assignedUser.socketId).emit('executiveMessage', data);
+
+        // io.emit('broadcast', { sender: socket.id, message: data });
+    });
+
+    socket.on('userMessage', (data) => {
+        console.log(`Message from ${socket.id}:`, data);
+        const executiveAssigned = activeExecutives.get(data.executive_id);
+        console.log(executiveAssigned);
+        io.to(executiveAssigned.socketId).emit('userMessage', data);
+        // io.emit('broadcast', { sender: socket.id, message: data });
     });
 
     socket.on('disconnect', () => {
         // console.log(`Client disconnected: ${socket.id}`);
+        for (const [queryId, user] of activeUsers.entries()) {
+            if (user.socketId === socket.id) {
+                activeUsers.delete(queryId);
+                console.log(`Removed user with queryId ${queryId} on disconnect`);
+                break; // Stop after finding one
+            }
+        }
+        for (const [userId, user] of activeExecutives.entries()) {
+            if (user.socketId === socket.id) {
+                activeExecutives.delete(userId);
+                console.log(`Removed Executive with userId ${userId} on disconnect`);
+                break; // Stop after finding one
+            }
+        }
+        console.log("on disconnect active execuives",activeExecutives);
+        console.log("on disconnect active users",activeUsers);
+        
         activeConnections.delete(socket.id);
         // console.log(`Remaining connections: ${activeConnections.size}`);
     });

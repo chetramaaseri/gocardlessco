@@ -44,24 +44,8 @@ if(!empty($_SESSION['query_Id'])){
         const messageInput = document.querySelector('.message-input');
         const messagesContainer = document.querySelector('.fb-messages');
         chatHeader.addEventListener('click', function(e) {
-            if (!e.target.classList.contains('minimize-btn') && 
-                !e.target.classList.contains('fa-minus') &&
-                !e.target.classList.contains('fa-times')) {
-                chatBody.classList.toggle('collapsed');
-            }
+            chatBody.classList.toggle('collapsed');
         });
-        
-        // Minimize button
-        minimizeBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            chatWidget.classList.toggle('minimized');
-            if (chatWidget.classList.contains('minimized')) {
-                minimizeBtn.classList.replace('fa-minus', 'fa-comment');
-            } else {
-                minimizeBtn.classList.replace('fa-comment', 'fa-minus');
-            }
-        });
-        
         // Send message
         function sendMessage() {
             const messageText = messageInput.value.trim();
@@ -113,24 +97,16 @@ if(!empty($_SESSION['query_Id'])){
         // });
     });
 </script>
-<script>
-    const loggedInUser = <?=json_encode($loggedInUser)?>;
-    window.socket = io(`<?=$_ENV['CHAT_SERVER_URL']?>`);
-    window.socket.on("connect", () => {
-        if(loggedInUser){
-            window.socket.emit('user_registered', loggedInUser);
-        }
-        console.log("Connected to the server");
-    });
-</script>
 <script type="text/babel">
-
+    // window.socket = io(`<?=$_ENV['CHAT_SERVER_URL']?>`);
+    const loggedInUser = <?=json_encode($loggedInUser)?>;
     const App = () => {
         const messagesEndRef = React.useRef(null);
         const [isLoggedIn,setLoggedIn] = React.useState(<?=!empty($_SESSION['query_Id']) ? true : false?>);
         const [isLoginFormVisible,setLoginFormVisible] = React.useState(false);
         const [typedMessage,setTypedMessage] = React.useState('');
         const [agent,setAgent] = React.useState(<?=json_encode($executiveAssigned)?>);
+        const [isAgentAvailable, setAgentAvailable] = React.useState(<?=!empty($executiveAssigned) ? true : false?>);
         const [isAgentTyping,setAgentTyping] = React.useState(false);
         const [waitingQueue,setWaitingQueue] = React.useState(0);
         const [user,setUser] = React.useState({
@@ -145,8 +121,49 @@ if(!empty($_SESSION['query_Id'])){
             { text: 'Welcome to GoCardlessCo', sender: 'bot' },
         ]);
 
+        function formatTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInMilliseconds = now - date;
+            const diffInMinutes = Math.floor(diffInMilliseconds / 60000);
+            const diffInHours = Math.floor(diffInMilliseconds / 3600000);
+
+            // Check if the date is today
+            const isToday = date.toDateString() === now.toDateString();
+            const isYesterday = date.getDate() === now.getDate() - 1 && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+
+            // If within the last hour, show relative time (e.g., "9 minutes ago")
+            if (diffInMinutes < 60 && diffInMinutes > 0) {
+                return `${diffInMinutes} min ago`;
+            }
+            // If the time is today, show in 11:00 AM format
+            if (isToday) {
+                const hours = date.getHours();
+                const minutes = date.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const formattedHours = hours % 12 || 12;
+                const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+                return `${formattedHours}:${formattedMinutes} ${ampm}`;
+            }
+            // If the time is yesterday, show in "10 Apr 2025" format
+            if (isYesterday) {
+                const day = date.getDate();
+                const month = date.toLocaleString('default', { month: 'short' });
+                const year = date.getFullYear();
+                return `${day} ${month} ${year}`;
+            }
+
+            // For any other case, show the full date
+            const day = date.getDate();
+            const month = date.toLocaleString('default', { month: 'short' });
+            const year = date.getFullYear();
+            return `${day} ${month} ${year}`;
+        }
+
         const handleExecutiveAssigned = async (executiveAssigned) => {
-            if(executiveAssigned && executiveAssigned.user_id){
+            console.log("executiveAssigned",executiveAssigned);
+            if(executiveAssigned && executiveAssigned.user_id && executiveAssigned.query_id){
+                console.log("assigned ",executiveAssigned);
                 setAgent(executiveAssigned);
                 const formData = new FormData();
                 formData.append('executive_id', executiveAssigned.user_id);
@@ -158,19 +175,16 @@ if(!empty($_SESSION['query_Id'])){
                     });
                     if (!response.ok) throw new Error('Executive Assigned API Failed');
                     const result = await response.json();
+                    console.log('Executive Assigned API result:', result);
+                    
                 } catch (error) {
                     console.error('Executive Assigned Callback error:', error);
                 }
-            }else{
-                alert('no exetive to be assigned')
             }
         };
         const handleExecutiveNotAvailable = async (data) => {
             console.log("exe not available", data);
-            
-            if(data){
-                setMessages(messages => [...messages, { text: 'Describe Your Query.', sender: 'bot' }]);
-            }
+            setAgentAvailable(false);
         };
         const handleWaitingQueue = async (data) => {
             
@@ -180,22 +194,37 @@ if(!empty($_SESSION['query_Id'])){
                 setMessages(messages => [...messages, { text: 'Kindly Wait For a While Our Executives are Busy.', sender: 'bot' }]);
             }
         };
+        const handleAgentMessage = async (data) => {
+            console.log("agent message", data);
+            setMessages(messages => [...messages, { text: data.text, sender: 'agent' }]);
+        };
+        const handleAgentTyping = async (data) => {
+            console.log("exe typing", data);
+        }
+        React.useEffect(() => {
+            window.socket = io(`<?=$_ENV['CHAT_SERVER_URL']?>`);
+            window.socket.on("connect", () => {
+                if (loggedInUser && Object.keys(loggedInUser).length > 0) {
+                    console.log("logend user and register", loggedInUser);
+                    window.socket.emit('user_registered', loggedInUser);
+                }
+                console.log("Connected to the server");
+            });
+            return () => {
+                window.socket.off("connect");
+                window.socket.disconnect();
+            };
+        }, []);
         React.useEffect(() => {
             window.socket.on('executive_assigned', handleExecutiveAssigned);
+            window.socket.on('executive_not_available', handleExecutiveNotAvailable);
+            window.socket.on('waiting_queue', handleWaitingQueue);
+            window.socket.on('executiveMessage', handleAgentMessage);
             return () => {
                 window.socket.off('executive_assigned', handleExecutiveAssigned);
-            };
-        }, []);
-        React.useEffect(() => {
-            window.socket.on('executive_not_available', handleExecutiveNotAvailable);
-            return () => {
                 window.socket.off('executive_not_available', handleExecutiveNotAvailable);
-            };
-        }, []);
-        React.useEffect(() => {
-            window.socket.on('waiting_queue', handleWaitingQueue);
-            return () => {
                 window.socket.off('waiting_queue', handleWaitingQueue);
+                window.socket.off('executiveMessage', handleAgentMessage);
             };
         }, []);
 
@@ -240,15 +269,25 @@ if(!empty($_SESSION['query_Id'])){
             setAgentTyping(false);
         }
 
-        const sendMessage = () => {
+        const sendMessage = async () => {
             if(typedMessage.trim() == ''){
                 return;
             }
             setMessages(messages => [...messages, { text: typedMessage.trim(), sender: 'self' }]);
-            setTypedMessage('');
             if(!isLoggedIn){
                 askForUserDetails();
+            }else if(!isAgentAvailable){
+                setAgentTyping(true);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                setMessages(messages => [...messages, { text: 'No agent available right now.', sender: 'bot' }]);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                setMessages(messages => [...messages, { text: 'we will get back to you.', sender: 'bot' }]);
+                setAgentTyping(false);
+            }else{
+                const now = new Date();
+                window.socket.emit('userMessage', { text: typedMessage.trim(), query_id: user.query_id, executive_id: agent.user_id, time: now.toISOString()});
             }
+            setTypedMessage('');
         };
         
         return (

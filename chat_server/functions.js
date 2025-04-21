@@ -5,10 +5,10 @@ export function assignQueryToExecutive(executivesMap, query) {
             exec.assignedQueries.push(query);
             exec.totalAssigned += 1;
             executivesMap.set(key, exec);
-            console.log(`✅ Query assigned to ${exec.name}`);
+            // console.log(`✅ Query assigned to ${exec.name}`);
             return exec;
         }
     }
-    console.log("❌ No executive available to handle the query.");
+    // console.log("❌ No executive available to handle the query.");
     return null;
 }
