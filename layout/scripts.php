@@ -11,3 +11,18 @@
 <script src="<?=BASE_URI?>assets/js/odometer.min.js"></script>
 <script src="<?=BASE_URI?>assets/js/ticker.min.js"></script>
 <script src="<?=BASE_URI?>assets/js/main.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const chatWidget = document.querySelector('.fb-chat-widget');
+    
+    document.querySelectorAll('a').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            // Add and remove highlight class
+            chatWidget.classList.add('highlight');
+            setTimeout(() => {
+                chatWidget.classList.remove('highlight');
+            }, 500);
+        });
+    });
+});
+</script>

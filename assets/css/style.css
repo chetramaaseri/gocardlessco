@@ -6835,3 +6835,12 @@ Responsive For Mobile & Tablet Devices
 ================================================== */
 
 /*# sourceMappingURL=style.css.map */
+
+.dropdown {
+  position: static;
+}
+
+.dropdown:hover > .dropdown-menu {
+  left: 50%;
+  transform: translateX(-50%);
+}
